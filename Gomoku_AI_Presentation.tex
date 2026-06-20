@@ -1,0 +1,162 @@
+\documentclass{beamer}
+\usetheme{Madrid}
+\usecolortheme{whale}
+
+\usepackage{kotex}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{listings}
+
+\title[오목 AI 시스템]{강화학습 및 몬테카를로 탐색 기반\\오목 AI 시스템 개발}
+\subtitle{정밀 렌주룰 구현 및 실시간 수읽기 최적화}
+\author[AntigravityPair]{개발자: chln0124}
+\date{\today}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}
+\frametitle{목차 (Table of Contents)}
+\tableofcontents
+\end{frame}
+
+\section{프로젝트 개요 및 UI 구성}
+\begin{frame}
+\frametitle{1. 프로젝트 개요}
+\begin{itemize}
+    \item \textbf{목표:} 13x13 바둑판 환경에서 정확한 오목 렌주룰(금수 규칙)을 준수하는 강력한 실시간 강화학습 AI 오목 프로그램 개발
+    \item \textbf{핵심 구현 요소:}
+    \begin{enumerate}
+        \item \textbf{정밀한 렌주룰 엔진:} 33(더블 열린3), 44(더블 4), 장목(6목 이상) 금수 판정 및 재귀적 활삼 검사
+        \item \textbf{CNN 기반 강화학습(RL) 에이전트:} PyTorch 및 REINFORCE(Policy Gradient) 알고리즘을 사용한 자가 대국(Self-Play) 학습
+        \item \textbf{정책망 기반 실시간 수읽기(MCTS):} 딥러닝 직관과 몬테카를로 시뮬레이션(수읽기)의 결합
+    \end{enumerate}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{2. UI 메뉴 구성 및 사용 방법}
+Pygame 기반의 사용자 친화적 메뉴 시스템 구성:
+\begin{block}{메인 메뉴 (MainMenu)}
+    \begin{itemize}
+        \item \textbf{1. Local 1 vs 1 Game:} 오프라인 사용자 간 대국 모드
+        \item \textbf{2. Player vs AI (RL):} AI와의 대국 모드 (Easy, Medium, Hard 난이도 지원)
+        \item \textbf{3. Train AI (Self-Play RL):} AI가 스스로 대국하며 실시간 학습 및 시각화
+        \item \textbf{4. Reset AI Model Weight:} AI 가중치 삭제 및 초기화
+    \end{itemize}
+\end{block}
+\end{frame}
+
+\section{정밀 렌주룰 (Strict Renju Rules)}
+\begin{frame}
+\frametitle{3. 렌주룰 금수 규칙 정의}
+흑돌(선공)의 오목판 내 지나친 유리함을 상쇄하기 위해 적용되는 규칙:
+\begin{itemize}
+    \item \textbf{33 금수 (Double-Three):} 돌을 놓았을 때 두 개 이상의 '열린 3(활삼)'이 동시에 형성되는 자리
+    \item \textbf{44 금수 (Double-Four):} 돌을 놓았을 때 두 개 이상의 '4'가 동시에 형성되는 자리
+    \item \textbf{장목 금수 (Overline):} 흑돌에 한해 6개 이상의 연속된 돌을 만드는 자리
+    \item \textbf{예외 규정 (우선권):} 착수 시점에 정확히 5목이 완성된다면, 금수 규칙보다 5목 승리가 우선하여 착수가 허용됨
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{4. 재귀적 활삼(Open Three) 탐색 알고리즘}
+단순한 형태 매칭을 넘어선 수학적 활삼 판정 로직:
+\begin{itemize}
+    \item \textbf{열린 3의 정의:} 한 칸을 채웠을 때 양쪽 끝이 모두 열려 있는 '열린 4'가 될 수 있는 3개의 연속 배치
+    \item \textbf{재귀 판정 (Depth 1):} 
+    \begin{enumerate}
+        \item 열린 3을 열린 4로 확장시키는 해당 빈칸들이 **스스로 금수 자리(33/44)**인지 사전에 검사
+        \item 만약 확장시키는 자리가 금수 자리라면 해당 3은 '열린 3'으로 인정되지 않음
+    \end{enumerate}
+\end{itemize}
+\begin{block}{알고리즘 흐름}
+    $\text{is\_forbidden}(r, c, \text{depth}) \rightarrow \text{is\_open\_three\_in\_dir}(r, c, \text{depth}) \rightarrow \text{is\_forbidden}(nr, nc, \text{depth}+1)$
+\end{block}
+\end{frame}
+
+\section{강화학습 및 신경망 아키텍처}
+\begin{frame}
+\frametitle{5. 신경망 아키텍처 (GomokuNet)}
+바둑판 상태의 이미지 공간적 특징을 포착하기 위해 CNN(합성곱 신경망) 설계:
+\begin{table}
+\centering
+\begin{tabular}{llc}
+\toprule
+\textbf{Layer Name} & \textbf{Type / Activation} & \textbf{Output Shape} \\
+\midrule
+Input State & Tensor (3 Channels) & $3 \times 13 \times 13$ \\
+Convolution 1 & Conv2d (64, 3x3) + BatchNorm + ReLU & $64 \times 13 \times 13$ \\
+Convolution 2 & Conv2d (64, 3x3) + BatchNorm + ReLU & $64 \times 13 \times 13$ \\
+Convolution 3 & Conv2d (64, 3x3) + BatchNorm + ReLU & $64 \times 13 \times 13$ \\
+Policy Head & Conv2d (2, 1x1) + Flatten + Linear & $169$ (Logits) \\
+\bottomrule
+\end{tabular}
+\end{table}
+\begin{itemize}
+    \item \textbf{채널 구성:} Channel 0 (현재 내 돌), Channel 1 (상대 돌), Channel 2 (빈 공간)
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{6. REINFORCE 및 보상 셰이핑}
+자가대국(Self-Play) 데이터를 활용한 경사 하강 훈련 메커니즘:
+\begin{itemize}
+    \item \textbf{손실 함수:} $Loss = -\frac{1}{N}\sum_{t=1}^{N} \log \pi(a_t | s_t) \cdot G_t$
+    \item \textbf{할인율 적용:} $G_t = R_t + \gamma R_{t+1} + \gamma^2 R_{t+2} + \dots$ ($\gamma = 0.95$)
+    \item \textbf{보상 함수 디자인 (Reward Shaping):}
+    \begin{itemize}
+        \item 게임 승리 시: $+2.0$, 패배 시: $-2.0$, 무승부 시: $-0.5$
+        \item 공격 셰이핑: 내 차례에 4를 형성하면 즉시 보상 $+0.2$ 부여
+        \item 수비 셰이핑: 상대방의 4 형성을 차단(블로킹)하면 즉시 보상 $+0.3$ 부여
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{정책망 기반 실시간 수읽기 (MCTS)}
+\begin{frame}
+\frametitle{7. 정책망 기반 실시간 수읽기 (MCTS/Rollout)}
+바둑판의 거대한 조합의 수를 정복하기 위해 '어려움(Hard)' 난이도에 적용된 알고리즘:
+\begin{itemize}
+    \item \textbf{배경:} 단일 CNN 예측은 빠른 연산(직관)이 가능하나 깊은 수읽기가 약함. 이를 보완하기 위해 실시간 가상 시뮬레이션 결합
+    \item \textbf{작동 단계:}
+    \begin{enumerate}
+        \item \textbf{후보 선별:} 정책망 확률이 가장 높은 상위 5개의 수(Top 5 Candidates)만 선택하여 탐색 폭을 극적으로 축소
+        \item \textbf{가상 대국 (Rollout):} 복사된 독립적인 보드에서 각 후보 지점별로 15회씩 가상 대국 실행 (최대 40수 깊이)
+        \item \textbf{최종 선택:} 15회 중 AI의 평균 승률이 가장 높은 자리를 선택하여 실제 착수
+    \end{enumerate}
+\end{itemize}
+\end{frame}
+
+\section{시스템 설치 및 실행 방법}
+\begin{frame}[fragile]
+\frametitle{8. 환경 설치 및 실행 명령어}
+프로그램 구동을 위한 파이썬 환경 설정 가이드:
+\begin{block}{필수 라이브러리 설치}
+    \begin{lstlisting}[language=bash,basicstyle=\small\ttfamily]
+pip install numpy torch pygame
+    \end{lstlisting}
+\end{block}
+
+\begin{block}{실행 명령어 (Mac / Linux / Windows)}
+    \begin{lstlisting}[language=bash,basicstyle=\small\ttfamily]
+# Anaconda Python 환경으로 실행하는 것을 권장
+/opt/anaconda3/bin/python3 Gomuku_Project.py
+
+# 또는 기본 파이썬 실행
+python3 Gomuku_Project.py
+    \end{lstlisting}
+\end{block}
+\end{frame}
+
+\begin{frame}
+\frametitle{Q \& A}
+\begin{center}
+    \Huge Thank You! \\[1cm]
+    \large 질문 및 피드백 환영합니다.
+\end{center}
+\end{frame}
+
+\end{document}

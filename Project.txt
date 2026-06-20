@@ -1,0 +1,25 @@
+코딩 프로젝트
+
+Main Project : 오목 
+
+
+AI 학습 - Reinforcement Lerning -> Agent Learning
+            - without GPU
+            
+Goal :  - 1 vs 1 대전
+             - 1 vs AI ( AI 학습은 내가 함)
+          
+기록 - 보민
+
+발표 - 우진
+
+기획 - 4명 다 참여
+
+코딩 - 4명 다 참여
+
+
+E-mail : 
+- [ ] 우진 : awj4837@gmail.com
+- [ ] 세움 : seum20112011@gmail.com
+- [ ] 보민 : gimb11004@gmail.com
+- [ ] 태린 : a01052190867@gmail.com

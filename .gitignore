@@ -1,0 +1,26 @@
+# Python 캐시 및 임시 파일
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# OS 임시 파일
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# VS Code 설정 폴더
+.vscode/
+
+# Jupyter Notebook 캐시
+.ipynb_checkpoints
